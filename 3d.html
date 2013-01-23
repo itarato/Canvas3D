@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script type="text/javascript">
+
+var ctx, canvas;
+var _3d_scale_base = 1.6;
+var world = [];
+var rotation_x = 0;
+var rotation_y = 0;
+
+function onLoad() {
+  canvas = document.getElementById('screen');
+  if (!canvas.getContext) {
+    return;
+  }
+
+  jQuery('body').keydown(function(event){
+    switch (event.keyCode) {
+      // Rotation X.
+      case 37:
+        rotation_x -= 0.1;
+        break;
+      case 39:
+        rotation_x += 0.1;
+        break;
+      // Rotation Y.
+      case 38:
+        rotation_y -= 0.1;
+        break;
+      case 40:
+        rotation_y += 0.1;
+        break;
+      // Distortion rate.
+      case 87:
+        _3d_scale_base += 0.01;
+        break;
+      case 83:
+        _3d_scale_base -= 0.01;
+        break;
+    }
+  });
+
+  ctx = canvas.getContext('2d');
+
+  world.push(new Point(-1, 1, 1));
+  world.push(new Point(-1, -1, 1));
+  world.push(new Point(1, -1, 1));
+  world.push(new Point(1, 1, 1));
+  world.push(new Point(1, 1, -1));
+  world.push(new Point(1, -1, -1));
+  world.push(new Point(-1, -1, -1));
+  world.push(new Point(-1, 1, -1));
+  world.push(new Point(-1, 1, 1));
+
+  setInterval(render, 10);
+}
+
+function render() {
+  canvas.width = canvas.width;
+
+  var w = jQuery('#screen').width();
+  var h = jQuery('#screen').height();
+  var center_x = w >> 1;
+  var center_y = h >> 1;
+  var p_previous = null;
+  for (var idx in world) {
+    var _p = world[idx];
+    var _p_tx = _p.rotateX(rotation_x);
+    var _p_txy = _p_tx.rotateY(rotation_y);
+    var xy = get3DCoordsPoint(_p_txy);
+    ctx.strokeRect((center_x + xy.x), (center_y + xy.y), 4, 4);
+
+    if (p_previous) {
+      ctx.moveTo((center_x + p_previous.x), (center_y + p_previous.y));
+      ctx.lineTo((center_x + xy.x), (center_y + xy.y));
+      ctx.stroke();
+    }
+
+    p_previous = xy;
+  }
+}
+
+function get3DCoordsPoint(point) {
+  return {
+    x: 100 * point.x * Math.pow(_3d_scale_base, point.z),
+    y: 100 * point.y * Math.pow(_3d_scale_base, point.z)
+  };
+}
+
+function Point(x, y, z) {
+  this.x = x;
+  this.y = y;
+  this.z = z;
+}
+
+Point.prototype.rotateX = function(deg) {
+  return new Point(
+    this.x,
+    this.y * Math.cos(deg) - this.z * Math.sin(deg),
+    this.y * Math.sin(deg) + this.z * Math.cos(deg)
+  );
+};
+
+Point.prototype.rotateY = function(deg) {
+  return new Point(
+    this.x * Math.cos(deg) + this.z * Math.sin(deg),
+    this.y,
+    -1 * this.x * Math.sin(deg) + this.z * Math.cos(deg)
+  );
+};
+
+</script>
+
+</head>
+<body onload="onLoad()">
+
+  <canvas id="screen" width="800" height="600"></canvas>
+
+  <pre>Use: up/down, left/right, s/w.</pre>
+
+</body>
+</html>
